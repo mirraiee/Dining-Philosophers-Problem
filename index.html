@@ -1,11 +1,182 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Dining Philosophers Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 30px;
+        }
+        .container {
+            margin-top: 20px;
+        }
+        .philosopher {
+            display: inline-block;
+            width: 150px;
+            height: 150px;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            margin: 10px;
+            line-height: 150px;
+            font-size: 14px;
+            background-color: #f0f0f0;
+        }
+        .thinking {
+            background-color: #e0e0e0;
+        }
+        .eating {
+            background-color: #ffeb3b;
+        }
+        .fork {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Hello!</h1>
+    <h1>Dining Philosophers Simulation 🍝</h1>
+
+    <!-- Input Section -->
+    <div>
+        <label for="numPhilosophers">Number of Philosophers:</label>
+        <input type="number" id="numPhilosophers" value="5" min="2" max="10">
+        <label for="speed">Simulation Speed (ms):</label>
+        <input type="number" id="speed" value="1000" min="500">
+        <button onclick="startSimulation()">Start Simulation</button>
+        <button onclick="stopSimulation()">Stop Simulation</button>
+    </div>
+
+    <!-- Display Area -->
+    <div id="container" class="container"></div>
+    <div id="forks" class="container"></div>
+
+    <script>
+        let philosophers = [];
+        let forks = [];
+        let philosopherDivs = [];
+        let forkDivs = [];
+        let numPhilosophers = 5;
+        let simulationSpeed = 1000;
+        let stopFlag = false;
+
+        // Delay simulation with async sleep
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Create philosopher and fork elements
+        function setupUI() {
+            const container = document.getElementById('container');
+            const forkContainer = document.getElementById('forks');
+            container.innerHTML = '';
+            forkContainer.innerHTML = '';
+
+            philosopherDivs = [];
+            forkDivs = [];
+
+            for (let i = 0; i < numPhilosophers; i++) {
+                // Philosopher Div
+                const div = document.createElement('div');
+                div.className = 'philosopher thinking';
+                div.id = `philosopher-${i}`;
+                div.innerHTML = `Philosopher ${i} is thinking...`;
+                container.appendChild(div);
+                philosopherDivs.push(div);
+
+                // Fork Div
+                const forkDiv = document.createElement('div');
+                forkDiv.className = 'fork';
+                forkDiv.id = `fork-${i}`;
+                forkDiv.innerHTML = `Fork ${i}: Available`;
+                forkContainer.appendChild(forkDiv);
+                forkDivs.push(forkDiv);
+            }
+        }
+
+        // Update philosopher status
+        function updatePhilosopherStatus(index, status) {
+            const philosopherDiv = philosopherDivs[index];
+            if (status === 'thinking') {
+                philosopherDiv.className = 'philosopher thinking';
+                philosopherDiv.innerHTML = `Philosopher ${index} is thinking... 🧠`;
+            } else if (status === 'eating') {
+                philosopherDiv.className = 'philosopher eating';
+                philosopherDiv.innerHTML = `Philosopher ${index} is eating... 🍝`;
+            }
+        }
+
+        // Update fork status
+        function updateForkStatus(index, available) {
+            const forkDiv = forkDivs[index];
+            forkDiv.innerHTML = `Fork ${index}: ${available ? 'Available ✅' : 'In Use ❌'}`;
+        }
+
+        // Acquire a fork
+        async function acquireFork(index) {
+            while (!forks[index]) {
+                await sleep(100);
+            }
+            forks[index] = false;
+            updateForkStatus(index, false);
+        }
+
+        // Release a fork
+        function releaseFork(index) {
+            forks[index] = true;
+            updateForkStatus(index, true);
+        }
+
+        // Philosopher behavior
+        async function philosopher(index) {
+            while (!stopFlag) {
+                updatePhilosopherStatus(index, 'thinking');
+                await sleep(Math.random() * simulationSpeed);
+
+                const leftFork = index;
+                const rightFork = (index + 1) % numPhilosophers;
+
+                // Try to acquire both forks
+                await acquireFork(leftFork);
+                await acquireFork(rightFork);
+
+                updatePhilosopherStatus(index, 'eating');
+                await sleep(Math.random() * simulationSpeed);
+
+                // Release both forks
+                releaseFork(leftFork);
+                releaseFork(rightFork);
+            }
+        }
+
+        // Start the simulation
+        function startSimulation() {
+            stopSimulation(); // Stop if running
+
+            numPhilosophers = parseInt(document.getElementById('numPhilosophers').value);
+            simulationSpeed = parseInt(document.getElementById('speed').value);
+            forks = Array(numPhilosophers).fill(true);
+            stopFlag = false;
+
+            setupUI();
+
+            philosophers = [];
+            for (let i = 0; i < numPhilosophers; i++) {
+                philosophers.push(philosopher(i));
+            }
+        }
+
+        // Stop the simulation
+        function stopSimulation() {
+            stopFlag = true;
+            document.getElementById('container').innerHTML = '';
+            document.getElementById('forks').innerHTML = '';
+        }
+    </script>
 </body>
 </html>
