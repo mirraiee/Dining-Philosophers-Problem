@@ -8,19 +8,23 @@
             text-align: center;
             margin-top: 30px;
         }
-        .container {
-            margin-top: 20px;
+        #circle {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            margin: 50px auto;
+            border: 2px dashed #ccc;
+            border-radius: 50%;
         }
         .philosopher {
-            display: inline-block;
-            width: 150px;
-            height: 150px;
+            position: absolute;
+            width: 100px;
+            height: 100px;
             border: 2px solid #ccc;
             border-radius: 50%;
-            margin: 10px;
-            line-height: 150px;
-            font-size: 14px;
-            background-color: #f0f0f0;
+            line-height: 100px;
+            background-color: #e0e0e0;
+            transition: background-color 0.3s;
         }
         .thinking {
             background-color: #e0e0e0;
@@ -29,8 +33,18 @@
             background-color: #ffeb3b;
         }
         .fork {
-            margin-top: 10px;
-            font-size: 14px;
+            position: absolute;
+            width: 20px;
+            height: 80px;
+            background-color: #ccc;
+            transform-origin: center;
+            transition: background-color 0.3s;
+        }
+        .fork.available {
+            background-color: #8bc34a;
+        }
+        .fork.unavailable {
+            background-color: #f44336;
         }
         button {
             padding: 10px 20px;
@@ -52,69 +66,76 @@
         <button onclick="stopSimulation()">Stop Simulation</button>
     </div>
 
-    <!-- Display Area -->
-    <div id="container" class="container"></div>
-    <div id="forks" class="container"></div>
+    <!-- Circular Display Area -->
+    <div id="circle"></div>
 
     <script>
         let philosophers = [];
         let forks = [];
-        let philosopherDivs = [];
-        let forkDivs = [];
+        let stopFlag = false;
         let numPhilosophers = 5;
         let simulationSpeed = 1000;
-        let stopFlag = false;
+        const circleRadius = 200;
 
         // Delay simulation with async sleep
         function sleep(ms) {
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        // Create philosopher and fork elements
+        // Create philosophers and forks in a circular layout
         function setupUI() {
-            const container = document.getElementById('container');
-            const forkContainer = document.getElementById('forks');
-            container.innerHTML = '';
-            forkContainer.innerHTML = '';
+            const circle = document.getElementById('circle');
+            circle.innerHTML = '';
+            const angleStep = (2 * Math.PI) / numPhilosophers;
 
-            philosopherDivs = [];
-            forkDivs = [];
-
+            philosophers = [];
+            forks = [];
+            
             for (let i = 0; i < numPhilosophers; i++) {
-                // Philosopher Div
-                const div = document.createElement('div');
-                div.className = 'philosopher thinking';
-                div.id = `philosopher-${i}`;
-                div.innerHTML = `Philosopher ${i} is thinking...`;
-                container.appendChild(div);
-                philosopherDivs.push(div);
+                // Philosopher Element
+                const angle = i * angleStep;
+                const philosopherDiv = document.createElement('div');
+                philosopherDiv.className = 'philosopher thinking';
+                philosopherDiv.id = `philosopher-${i}`;
+                philosopherDiv.innerHTML = `🧠 ${i}`;
+                philosopherDiv.style.left = `${250 + circleRadius * Math.cos(angle) - 50}px`;
+                philosopherDiv.style.top = `${250 + circleRadius * Math.sin(angle) - 50}px`;
+                circle.appendChild(philosopherDiv);
+                philosophers.push(philosopherDiv);
 
-                // Fork Div
+                // Fork Element
+                const forkAngle = angle + angleStep / 2;
                 const forkDiv = document.createElement('div');
-                forkDiv.className = 'fork';
+                forkDiv.className = 'fork available';
                 forkDiv.id = `fork-${i}`;
-                forkDiv.innerHTML = `Fork ${i}: Available`;
-                forkContainer.appendChild(forkDiv);
-                forkDivs.push(forkDiv);
+                forkDiv.style.left = `${250 + (circleRadius - 30) * Math.cos(forkAngle) - 10}px`;
+                forkDiv.style.top = `${250 + (circleRadius - 30) * Math.sin(forkAngle) - 40}px`;
+                forkDiv.style.transform = `rotate(${(forkAngle * 180) / Math.PI}deg)`;
+                circle.appendChild(forkDiv);
+                forks.push(true);
             }
         }
 
         // Update philosopher status
         function updatePhilosopherStatus(index, status) {
-            const philosopherDiv = philosopherDivs[index];
+            const philosopherDiv = philosophers[index];
             if (status === 'thinking') {
                 philosopherDiv.className = 'philosopher thinking';
-                philosopherDiv.innerHTML = `Philosopher ${index} is thinking... 🧠`;
+                philosopherDiv.innerHTML = `🧠 ${index}`;
             } else if (status === 'eating') {
                 philosopherDiv.className = 'philosopher eating';
-                philosopherDiv.innerHTML = `Philosopher ${index} is eating... 🍝`;
+                philosopherDiv.innerHTML = `🍝 ${index}`;
             }
         }
 
         // Update fork status
         function updateForkStatus(index, available) {
-            const forkDiv = forkDivs[index];
-            forkDiv.innerHTML = `Fork ${index}: ${available ? 'Available ✅' : 'In Use ❌'}`;
+            const forkDiv = document.getElementById(`fork-${index}`);
+            if (available) {
+                forkDiv.className = 'fork available';
+            } else {
+                forkDiv.className = 'fork unavailable';
+            }
         }
 
         // Acquire a fork
@@ -165,17 +186,15 @@
 
             setupUI();
 
-            philosophers = [];
             for (let i = 0; i < numPhilosophers; i++) {
-                philosophers.push(philosopher(i));
+                philosopher(i);
             }
         }
 
         // Stop the simulation
         function stopSimulation() {
             stopFlag = true;
-            document.getElementById('container').innerHTML = '';
-            document.getElementById('forks').innerHTML = '';
+            document.getElementById('circle').innerHTML = '';
         }
     </script>
 </body>
